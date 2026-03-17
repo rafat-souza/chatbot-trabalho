@@ -3,10 +3,7 @@ import string
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-nltk.download('punkt')
-nltk.download('rslp')
-
-pares = {
+pares_brutos = {
 
     # conversa casual
     ("oi", "olá", "opa", "e aí"): "Olá! Sou seu assistente técnico. Como posso ajudar?",
@@ -21,6 +18,14 @@ pares = {
     "audio nao funciona": "Verifique se o driver de som está atualizado e se a saída correta está selecionada."
 }
 
+pares = {}
+for chave, resposta in pares_brutos.items():
+    if isinstance(chave, tuple):
+        for sub_chave in chave:
+            pares[sub_chave] = resposta
+    else:
+        pares[chave] = resposta
+
 def preprocess(text):
     tokens = nltk.word_tokenize(text.lower())
     stemmer = nltk.stem.RSLPStemmer()
@@ -28,6 +33,7 @@ def preprocess(text):
 
 def get_response(user_input):
     user_input_processed = preprocess(user_input)
+
     questions = list(pares.keys())
     questions_processed = [preprocess(q) for q in questions]
 
@@ -38,6 +44,7 @@ def get_response(user_input):
 
     vals = cosine_similarity(tfidf[-1], tfidf[:-1])
     index = vals.argsort()[0][-1]
+
     flat = vals.flatten()
     flat.sort()
 
@@ -56,13 +63,11 @@ reflexoes = {
     "eu estava": "você estava",
 }
 
-print("Olá! Eu sou o helpbot. Digite 'sair' para encerrar a conversa.")
-
+print("Descreva o problema do seu computador. Digite 'sair' para finalizar a conversa.")
 while True:
-    user_input = input("Converse com o bot: ")
-    if user_input.lower() == "sair":
-        print("ChatBot: Adeus!")
+    user_query = input("Converse com o bot: ")
+    if user_query.lower() == "sair":
+        print("ChatBot: Tchau!")
         break
-    response = chatbot.respond(user_input)
-    print("ChatBot: ", response)
+    print(f"ChatBot: {get_response(user_query)}")
 
