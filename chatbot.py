@@ -21,6 +21,10 @@ pares = {
     "audio nao funciona": "Verifique se o driver de som está atualizado e se a saída correta está selecionada."
 }
 
+def preprocess(text):
+    tokens = nltk.word_tokenize(text.lower())
+    stemmer = nltk.stem.RSLPStemmer()
+    return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation])
 
 reflexoes = {
     "eu": "você",
