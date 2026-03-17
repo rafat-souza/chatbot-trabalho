@@ -26,6 +26,26 @@ def preprocess(text):
     stemmer = nltk.stem.RSLPStemmer()
     return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation])
 
+def get_response(user_input):
+    user_input_processed = preprocess(user_input)
+    questions = list(pares.keys())
+    questions_processed = [preprocess(q) for q in questions]
+
+    questions_processed.append(user_input_processed)
+
+    vectorizer = TfidfVectorizer()
+    tfidf = vectorizer.fit_transform(questions_processed)
+
+    vals = cosine_similarity(tfidf[-1], tfidf[:-1])
+    index = vals.argsort()[0][-1]
+    flat = vals.flatten()
+    flat.sort()
+
+    if flat[-1] < 0.3:
+        return "Desculpe, não entendi o problema. Pode detalhar melhor?"
+    else:
+        return pares[questions[index]]
+
 reflexoes = {
     "eu": "você",
     "meu": "seu",
