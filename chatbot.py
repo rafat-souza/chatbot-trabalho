@@ -1,5 +1,6 @@
 import nltk
 import string
+import random
 import unicodedata
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -37,6 +38,9 @@ def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto)
                    if unicodedata.category(c) != 'Mn')
 
+saudacoes = ["oi", "olá", "opa", "e aí", "quem é você", "o que você faz"]
+saudacoes_proc = [preprocess(s) for s in saudacoes]
+
 def get_response(user_input):
     user_input_processed = preprocess(user_input)
 
@@ -56,18 +60,19 @@ def get_response(user_input):
 
     if flat[-1] < 0.3:
         return "Desculpe, não entendi o problema. Pode detalhar melhor?"
-    else:
-        return pares[questions[index]]
 
-reflexoes = {
-    "eu": "você",
-    "meu": "seu",
-    "você": "eu",
-    "seu": "meu",
-    "você é": "eu sou",
-    "você estava": "eu estava",
-    "eu estava": "você estava",
-}
+    resposta_base = pares[questions[index]]
+    pergunta_encontrada_proc = questions_processed[index]
+
+    if pergunta_encontrada_proc in saudacoes_proc:
+        return resposta_base
+    else:
+        sugestoes = [
+            "Posso ajudar com algo mais?",
+            "Tem mais alguma dúvida técnica?",
+            "Algo mais está se comportando de forma estranha no PC?"
+        ]
+        return f"{resposta_base}\n\nChatBot: {random.choice(sugestoes)}"
 
 print("Descreva o problema do seu computador. Digite 'sair' para finalizar a conversa.")
 while True:
@@ -76,4 +81,3 @@ while True:
         print("ChatBot: Tchau!")
         break
     print(f"ChatBot: {get_response(user_query)}")
-
