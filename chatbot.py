@@ -1,5 +1,6 @@
 import nltk
 import string
+import unicodedata
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -15,7 +16,7 @@ pares_brutos = {
     "tela azul": "Geralmente indica erro de hardware ou driver. Tente reiniciar em modo de segurança.",
     "computador travando": "Pressione Ctrl+Alt+Del e feche programas que consomem muita memória.",
     "monitor sem imagem": "Verifique se o cabo de vídeo (HDMI/VGA) está bem encaixado na placa de vídeo.",
-    "audio nao funciona": "Verifique se o driver de som está atualizado e se a saída correta está selecionada."
+    "áudio não funciona": "Verifique se o driver de som está atualizado e se a saída correta está selecionada."
 }
 
 pares = {}
@@ -27,9 +28,14 @@ for chave, resposta in pares_brutos.items():
         pares[chave] = resposta
 
 def preprocess(text):
-    tokens = nltk.word_tokenize(text.lower())
+    text = remover_acentos(text.lower())
+    tokens = nltk.word_tokenize(text)
     stemmer = nltk.stem.RSLPStemmer()
     return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation])
+
+def remover_acentos(texto):
+    return ''.join(c for c in unicodedata.normalize('NFD', texto)
+                   if unicodedata.category(c) != 'Mn')
 
 def get_response(user_input):
     user_input_processed = preprocess(user_input)
