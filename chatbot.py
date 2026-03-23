@@ -73,11 +73,3 @@ def get_response(user_input):
             "Algo mais está se comportando de forma estranha no PC?"
         ]
         return f"{resposta_base}\n\nChatBot: {random.choice(sugestoes)}"
-
-print("Descreva o problema do seu computador. Digite 'sair' para finalizar a conversa.")
-while True:
-    user_query = input("Converse com o bot: ")
-    if user_query.lower() == "sair":
-        print("ChatBot: Tchau!")
-        break
-    print(f"ChatBot: {get_response(user_query)}")
