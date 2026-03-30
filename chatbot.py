@@ -8,16 +8,16 @@ from sklearn.metrics.pairwise import cosine_similarity
 pares_brutos = {
 
     # conversa casual
-    ("oi", "olá", "opa", "e aí"): "Olá! Sou seu assistente técnico. Como posso ajudar?",
-    ("quem é você", "o que você faz"): "Sou um bot de suporte para problemas de computador.",
+    ("oi", "olá", "opa", "e aí"): "Olá! Sou Bob seu assistente técnico, Como posso ajudar?",
+    ("quem é você", "o que você faz"): "Sou Bob um bot de suporte para problemas de computador.",
 
     # suporte
-    "computador não liga": "Verifique se o cabo de força está conectado à tomada e ao gabinete.",
-    "internet lenta": "Reinicie o seu roteador e verifique se há muitos dispositivos conectados.",
-    "tela azul": "Geralmente indica erro de hardware ou driver. Tente reiniciar em modo de segurança.",
-    "computador travando": "Pressione Ctrl+Alt+Del e feche programas que consomem muita memória.",
-    "monitor sem imagem": "Verifique se o cabo de vídeo (HDMI/VGA) está bem encaixado na placa de vídeo.",
-    "áudio não funciona": "Verifique se o driver de som está atualizado e se a saída correta está selecionada."
+    "computador não liga": "Bob: Verifique se o cabo de força está conectado à tomada e ao gabinete.",
+    "internet lenta": "Bob: Reinicie o seu roteador e verifique se há muitos dispositivos conectados.",
+    "tela azul": "Bob: Geralmente indica erro de hardware ou driver, voce pode usar o memtest ou hdtune para verificar se e problema de hardware, caso nao seja pesquise o codigo de erro na web",
+    "computador travando": "Bob: Pressione Ctrl+Alt+Del e feche programas que consomem muita memória.",
+    "monitor sem imagem": "Bob: Verifique se o cabo de vídeo (HDMI/VGA/DP) está bem encaixado na placa de vídeo ou na placa mae.",
+    "áudio não funciona": "Bob: Tente atualiza os driver de som e se a saída correta está selecionada."
 }
 
 pares = {}
@@ -59,7 +59,7 @@ def get_response(user_input):
     flat.sort()
 
     if flat[-1] < 0.3:
-        return "Desculpe, não entendi o problema. Pode detalhar melhor?"
+        return "Bob: Desculpe, não entendi o problema. Pode detalhar melhor?"
 
     resposta_base = pares[questions[index]]
     pergunta_encontrada_proc = questions_processed[index]
@@ -72,4 +72,4 @@ def get_response(user_input):
             "Tem mais alguma dúvida técnica?",
             "Algo mais está se comportando de forma estranha no PC?"
         ]
-        return f"{resposta_base}\n\nChatBot: {random.choice(sugestoes)}"
+        return f"{resposta_base}\n\n{random.choice(sugestoes)}"
