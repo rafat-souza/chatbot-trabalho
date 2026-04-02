@@ -1,57 +1,74 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
     <title>Bob</title>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="titulo">
-        <h1>Bob o Bot</h1>
+      <h1>Bob o Bot</h1>
     </div>
 
     <div class="main-container">
-        <div class="caixa-resposta">
-            <p id="resposta">Envie sua duvida...</p>
+      <div class="caixa-resposta" id="chat-historico">
+        <div class="msg-bot">
+          <strong>Bob:</strong> Olá! Envie sua dúvida...
         </div>
+      </div>
 
-        <div class="caixa-pergunta">
-            <input type="text" id="pergunta" placeholder="Digite sua mensagem..." onkeypress="if(event.key === 'Enter') enviarMensagem()">
-            <button onclick="enviarMensagem()" class="botao">Enviar</button>
-        </div>
+      <div class="caixa-pergunta">
+        <input
+          type="text"
+          id="pergunta"
+          placeholder="Digite sua mensagem..."
+          onkeypress="if (event.key === 'Enter') enviarMensagem();"
+        />
+        <button onclick="enviarMensagem()" class="botao">Enviar</button>
+      </div>
     </div>
 
     <script>
-        async function enviarMensagem() {
-            const inputMensagem = document.getElementById("pergunta");
-            const mensagem = inputMensagem.value;
-            const elementoResposta = document.getElementById("resposta");
+      async function enviarMensagem() {
+        const inputMensagem = document.getElementById("pergunta");
+        const mensagem = inputMensagem.value.trim();
+        const chatHistorico = document.getElementById("chat-historico");
 
-            if (!mensagem) return;
+        if (!mensagem) return;
 
-            elementoResposta.innerText = "Pensando...";
+        chatHistorico.innerHTML += `<div class="msg-usuario"><strong>Você:</strong> ${mensagem}</div>`;
+        inputMensagem.value = "";
+        chatHistorico.scrollTop = chatHistorico.scrollHeight;
 
-            try {
-                const resposta = await fetch("http://127.0.0.1:5000/api/chat", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ mensagem: mensagem })
-                });
+        const idCarregando = "loading-" + Date.now();
+        chatHistorico.innerHTML += `<div id="${idCarregando}" class="msg-bot"><em>Bob está digitando...</em></div>`;
+        chatHistorico.scrollTop = chatHistorico.scrollHeight;
 
-                const dados = await resposta.json();
-                elementoResposta.innerText = dados.resposta;
-                inputMensagem.value = "";
+        try {
+          const resposta = await fetch("http://127.0.0.1:5000/api/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ mensagem: mensagem }),
+          });
 
-            } catch (error) {
-                elementoResposta.innerText = "Ligar o servidor";
-                console.error("Erro:", error);
-            }
+          const dados = await resposta.json();
+
+          document.getElementById(idCarregando).remove();
+
+          chatHistorico.innerHTML += `<div class="msg-bot"><strong>Bob:</strong> ${dados.resposta}</div>`;
+        } catch (error) {
+          if (document.getElementById(idCarregando)) {
+            document.getElementById(idCarregando).remove();
+          }
+          chatHistorico.innerHTML += `<div class="msg-bot erro"><strong>Erro:</strong> Ligar o servidor.</div>`;
+          console.error("Erro:", error);
         }
-    </script>
 
-</body>
+        chatHistorico.scrollTop = chatHistorico.scrollHeight;
+      }
+    </script>
+  </body>
 </html>

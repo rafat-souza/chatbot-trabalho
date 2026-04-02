@@ -1,74 +1,114 @@
-body, html {
-    height: 100%;
-    margin: 0;
-    background-color: #2b2b2b;
-    color: #e0e0e0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.main-container {
-    position: fixed;
-    bottom: 5%;
-    left: 20%;
-    right: 20%;
-}
-
-.caixa-pergunta {
-    display: flex;
-    background-color: #3d3d3d;
-    padding: 6px 10px;
-    margin-bottom: 10px;
-    border-radius: 30px;
-}
-
-
-.caixa-resposta {
-    display: flex;
-    background-color: #3d3d3d;
-    text-align: left;
-    padding: 5px 25px;
-    margin-bottom: 10px;
-    border-radius: 30px;
-}
-
-
-#pergunta {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: white;
-    padding: 12px 15px;
-    font-size: 16px;
-}
-
-
-#resposta {
-    color: white;
-    line-height: 1.5;
-}
-
-
-.botao {
-    background-color: #2d37d0;
-    padding: 0 30px;
-    border: none;
-    color: white;
-    border-radius: 25px;
-}
-
-
-.botao:active {
-    transform: scale(0.98);
+body,
+html {
+  height: 100%;
+  margin: 0;
+  background-color: #2b2b2b;
+  color: #e0e0e0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: sans-serif;
 }
 
 .titulo {
-    position: fixed;
-    top: 0;
-    left: 30%;
-    right: 30%;
-    text-align: center;
+  position: fixed;
+  top: 0;
+  left: 30%;
+  right: 30%;
+  text-align: center;
+}
 
+.main-container {
+  position: fixed;
+  bottom: 5%;
+  left: 20%;
+  right: 20%;
+  display: flex;
+  flex-direction: column;
+  height: 80%; /* Define uma altura para comportar o histórico */
+}
+
+.caixa-resposta {
+  display: flex;
+  flex-direction: column;
+  background-color: #3d3d3d;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 15px;
+  flex: 1; /* Ocupa o espaço disponível do container */
+  overflow-y: auto; /* Adiciona a barra de rolagem */
+}
+
+.caixa-pergunta {
+  display: flex;
+  background-color: #3d3d3d;
+  padding: 6px 10px;
+  border-radius: 30px;
+}
+
+#pergunta {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  padding: 12px 15px;
+  font-size: 16px;
+}
+
+.botao {
+  background-color: #2d37d0;
+  padding: 0 30px;
+  border: none;
+  color: white;
+  border-radius: 25px;
+  cursor: pointer;
+}
+
+.botao:active {
+  transform: scale(0.98);
+}
+
+/* Estilos para os balões de mensagem */
+.msg-usuario,
+.msg-bot {
+  max-width: 75%;
+  padding: 10px 15px;
+  margin-bottom: 10px;
+  border-radius: 15px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.msg-usuario {
+  align-self: flex-end; /* Alinha à direita */
+  background-color: #2d37d0;
+  color: white;
+  border-bottom-right-radius: 5px;
+}
+
+.msg-bot {
+  align-self: flex-start; /* Alinha à esquerda */
+  background-color: #4f4f4f;
+  color: white;
+  border-bottom-left-radius: 5px;
+  white-space: pre-wrap; /* Mantém as quebras de linha enviadas pelo Python */
+}
+
+.erro {
+  color: #ff6b6b;
+}
+
+/* Estilização da barra de rolagem para combinar com o tema escuro */
+.caixa-resposta::-webkit-scrollbar {
+  width: 8px;
+}
+
+.caixa-resposta::-webkit-scrollbar-thumb {
+  background-color: #555;
+  border-radius: 4px;
+}
+
+.caixa-resposta::-webkit-scrollbar-track {
+  background: transparent;
 }

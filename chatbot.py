@@ -12,12 +12,12 @@ pares_brutos = {
     ("quem é você", "o que você faz"): "Sou Bob um bot de suporte para problemas de computador.",
 
     # suporte
-    "computador não liga": "Bob: Verifique se o cabo de força está conectado à tomada e ao gabinete.",
-    "internet lenta": "Bob: Reinicie o seu roteador e verifique se há muitos dispositivos conectados.",
-    "tela azul": "Bob: Geralmente indica erro de hardware ou driver, voce pode usar o memtest ou hdtune para verificar se e problema de hardware, caso nao seja pesquise o codigo de erro na web",
-    "computador travando": "Bob: Pressione Ctrl+Alt+Del e feche programas que consomem muita memória.",
-    "monitor sem imagem": "Bob: Verifique se o cabo de vídeo (HDMI/VGA/DP) está bem encaixado na placa de vídeo ou na placa mae.",
-    "áudio não funciona": "Bob: Tente atualiza os driver de som e se a saída correta está selecionada."
+    "computador não liga": "Verifique se o cabo de força está conectado à tomada e ao gabinete.",
+    "internet lenta": "Reinicie o seu roteador e verifique se há muitos dispositivos conectados.",
+    "tela azul": "Geralmente indica erro de hardware ou driver, voce pode usar o memtest ou hdtune para verificar se e problema de hardware, caso nao seja pesquise o codigo de erro na web",
+    "computador travando": "Pressione Ctrl+Alt+Del e feche programas que consomem muita memória.",
+    "monitor sem imagem": "Verifique se o cabo de vídeo (HDMI/VGA/DP) está bem encaixado na placa de vídeo ou na placa mae.",
+    "áudio não funciona": "Tente atualizar os drivers de som e verifique se a saída correta está selecionada."
 }
 
 pares = {}
