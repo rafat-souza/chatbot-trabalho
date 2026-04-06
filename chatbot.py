@@ -59,7 +59,7 @@ def get_response(user_input):
     flat.sort()
 
     if flat[-1] < 0.3:
-        return "Bob: Desculpe, não entendi o problema. Pode detalhar melhor?"
+        return "Desculpe, não entendi o problema. Pode detalhar melhor?"
 
     resposta_base = pares[questions[index]]
     pergunta_encontrada_proc = questions_processed[index]
