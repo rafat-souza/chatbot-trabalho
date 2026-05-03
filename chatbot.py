@@ -1,32 +1,28 @@
 import nltk
 import string
-import random
 import unicodedata
+import torch
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from transformers import pipeline
 
-pares_brutos = {
+gerador = pipeline(
+    "text-generation",
+    model="Qwen/Qwen2.5-1.5B-Instruct",
+    device_map="auto",
+    torch_dtype=torch.float16
+)
 
-    # conversa casual
-    ("oi", "olá", "opa", "e aí"): "Olá! Sou Bob seu assistente técnico, Como posso ajudar?",
-    ("quem é você", "o que você faz"): "Sou Bob um bot de suporte para problemas de computador.",
+base_dados = [
+    "Computador não liga: Verificar conexão do cabo de energia, chave da fonte de alimentação e conexões do painel frontal da placa-mãe.",
+    "Tela Azul da Morte (BSOD): Isolar falhas de memória RAM com o software Memtest86, verificar temperaturas e atualizar drivers críticos.",
+    "Lentidão do sistema: Monitorar o Gerenciador de Tarefas para identificar gargalos de CPU/Disco/RAM, desativar programas de inicialização desnecessários e verificar a integridade do SSD/HD.",
+    "Sem conexão com a internet: Reiniciar o modem/roteador, verificar o cabo de rede (RJ45), ou redefinir as configurações de rede (flush DNS).",
+    "Superaquecimento ou desligamento repentino: Limpar poeira dos dissipadores, substituir a pasta térmica do processador e garantir que os fans (ventoinhas) estejam operando adequadamente.",
+    "Sem saída de áudio: Checar o dispositivo de reprodução padrão no Windows, reinstalar os drivers de áudio da placa-mãe e testar conectores frontais e traseiros.",
+    "Monitor sem vídeo: Verificar cabo HDMI/DisplayPort, limpar contatos da memória RAM com borracha e testar a conexão diretamente na placa-mãe caso a placa de vídeo dedicada falhe."
+]
 
-    # suporte
-    "computador não liga": "Verifique se o cabo de força está conectado à tomada e ao gabinete.",
-    "internet lenta": "Reinicie o seu roteador e verifique se há muitos dispositivos conectados.",
-    "tela azul": "Geralmente indica erro de hardware ou driver, voce pode usar o memtest ou hdtune para verificar se e problema de hardware, caso nao seja pesquise o codigo de erro na web",
-    "computador travando": "Pressione Ctrl+Alt+Del e feche programas que consomem muita memória.",
-    "monitor sem imagem": "Verifique se o cabo de vídeo (HDMI/VGA/DP) está bem encaixado na placa de vídeo ou na placa mae.",
-    "áudio não funciona": "Tente atualizar os drivers de som e verifique se a saída correta está selecionada."
-}
-
-pares = {}
-for chave, resposta in pares_brutos.items():
-    if isinstance(chave, tuple):
-        for sub_chave in chave:
-            pares[sub_chave] = resposta
-    else:
-        pares[chave] = resposta
 
 def preprocess(text):
     text = remover_acentos(text.lower())
@@ -34,42 +30,50 @@ def preprocess(text):
     stemmer = nltk.stem.RSLPStemmer()
     return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation])
 
+
 def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto)
                    if unicodedata.category(c) != 'Mn')
 
-saudacoes = ["oi", "olá", "opa", "e aí", "quem é você", "o que você faz"]
-saudacoes_proc = [preprocess(s) for s in saudacoes]
+base_dados_proc = [preprocess(doc) for doc in base_dados]
 
 def get_response(user_input):
     user_input_processed = preprocess(user_input)
-
-    questions = list(pares.keys())
-    questions_processed = [preprocess(q) for q in questions]
-
-    questions_processed.append(user_input_processed)
+    documentos = base_dados_proc + [user_input_processed]
 
     vectorizer = TfidfVectorizer()
-    tfidf = vectorizer.fit_transform(questions_processed)
+    tfidf = vectorizer.fit_transform(documentos)
 
     vals = cosine_similarity(tfidf[-1], tfidf[:-1])
     index = vals.argsort()[0][-1]
+    similaridade = vals.flatten()[index]
 
-    flat = vals.flatten()
-    flat.sort()
-
-    if flat[-1] < 0.3:
-        return "Desculpe, não entendi o problema. Pode detalhar melhor?"
-
-    resposta_base = pares[questions[index]]
-    pergunta_encontrada_proc = questions_processed[index]
-
-    if pergunta_encontrada_proc in saudacoes_proc:
-        return resposta_base
+    if similaridade > 0.1:
+        contexto = base_dados[index]
     else:
-        sugestoes = [
-            "Posso ajudar com algo mais?",
-            "Tem mais alguma dúvida técnica?",
-            "Algo mais está se comportando de forma estranha no PC?"
-        ]
-        return f"{resposta_base}\n\n{random.choice(sugestoes)}"
+        contexto = "Não há informações específicas na base de dados. Forneça instruções gerais e peça mais detalhes do problema."
+
+    mensagens = [
+        {
+            "role": "system",
+            "content": "Você é um assistente técnico de suporte. Seja direto nas respostas. Utilize a informação de contexto para embasar a solução. Não utilize tom de brincadeira."
+        },
+        {
+            "role": "user",
+            "content": f"Contexto recuperado da base: {contexto}\n\nProblema relatado pelo usuário: {user_input}"
+        }
+    ]
+
+    try:
+        resultado = gerador(
+            mensagens,
+            max_new_tokens=150,
+            temperature=0.2,
+            do_sample=True
+        )
+
+        resposta_final = resultado[0]["generated_text"][-1]["content"]
+        return resposta_final.strip()
+
+    except Exception as e:
+        return f"Erro interno do modelo: {str(e)}"
