@@ -36,6 +36,16 @@
     </div>
 
     <script>
+        function formatarResposta(texto) {
+            if (!texto) return "";
+
+            let html = texto.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+
+            html = html.replace(/\n/g, "<br>");
+
+            return html;
+        }
+
         async function enviarMensagem() {
             const input = document.getElementById("pergunta");
             const chat = document.getElementById("chat-historico");
@@ -66,10 +76,13 @@
                 });
                 const dados = await res.json();
                 document.getElementById(idLoad).remove();
+
+                const respostaFormatada = formatarResposta(dados.resposta);
+
                 chat.innerHTML += `
                         <div class="msg-container">
                             <img src="${imgPath}" class="bot-avatar" onerror="this.src='https://via.placeholder.com/40'">
-                            <div class="msg-bot"><strong>Bob:</strong> ${dados.resposta}</div>
+                            <div class="msg-bot"><strong>Bob:</strong><br>${respostaFormatada}</div>
                         </div>`;
             } catch (e) {
                 if (document.getElementById(idLoad)) document.getElementById(idLoad).remove();
