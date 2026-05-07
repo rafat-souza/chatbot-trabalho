@@ -1,82 +1,95 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="style.css" />
-    <title>Bob</title>
-  </head>
-  <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bob o Bot - Suporte Técnico</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
     <nav class="navbar">
         <ul>
-            <li><a href="index.html" onclick="showSection('chat')">Chat</a></li>
-            <li><a href="sobre.html" onclick="showSection('sobre')">Sobre</a></li>
-            <li><a href="info.html" onclick="showSection('info')">Informações</a></li>
+            <li><a href="index.html">Chat</a></li>
+            <li><a href="sobre.html">Sobre</a></li>
+            <li><a href="info.html">Informações</a></li>
         </ul>
     </nav>
 
-    <div class="titulo">
-      <h1>Bob o Bot</h1>
-    </div>
-
     <div class="main-container">
-      <div class="caixa-resposta" id="chat-historico">
-        <div class="msg-bot">
-          <strong>Bob:</strong> Olá! Envie sua dúvida...
+        <div class="titulo">
+            <h1>Bob o Bot</h1>
         </div>
-      </div>
 
-      <div class="caixa-pergunta">
-        <input
-          type="text"
-          id="pergunta"
-          placeholder="Digite sua mensagem..."
-          onkeypress="if (event.key === 'Enter') enviarMensagem();"
-        />
-        <button onclick="enviarMensagem()" class="botao">Enviar</button>
-      </div>
+        <div class="caixa-resposta" id="chat-historico">
+            <div class="msg-container">
+                <img src="img/logo.png" class="bot-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                <div class="msg-bot">
+                    <strong>Bob:</strong> Olá! Como posso ajudar com seu hardware hoje?
+                </div>
+            </div>
+        </div>
+
+        <div class="caixa-pergunta">
+            <input type="text" id="pergunta" placeholder="Digite sua dúvida..." onkeypress="if (event.key === 'Enter') enviarMensagem();">
+            <button onclick="enviarMensagem()" class="botao">Enviar</button>
+        </div>
     </div>
 
     <script>
-      async function enviarMensagem() {
-        const inputMensagem = document.getElementById("pergunta");
-        const mensagem = inputMensagem.value.trim();
-        const chatHistorico = document.getElementById("chat-historico");
+        function formatarResposta(texto) {
+            if (!texto) return "";
 
-        if (!mensagem) return;
+            let html = texto.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
 
-        chatHistorico.innerHTML += `<div class="msg-usuario"><strong>Você:</strong> ${mensagem}</div>`;
-        inputMensagem.value = "";
-        chatHistorico.scrollTop = chatHistorico.scrollHeight;
+            html = html.replace(/\n/g, "<br>");
 
-        const idCarregando = "loading-" + Date.now();
-        chatHistorico.innerHTML += `<div id="${idCarregando}" class="msg-bot"><em>Bob está digitando...</em></div>`;
-        chatHistorico.scrollTop = chatHistorico.scrollHeight;
-
-        try {
-          const resposta = await fetch("http://127.0.0.1:5000/api/chat", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ mensagem: mensagem }),
-          });
-
-          const dados = await resposta.json();
-
-          document.getElementById(idCarregando).remove();
-
-          chatHistorico.innerHTML += `<div class="msg-bot"><strong>Bob:</strong> ${dados.resposta}</div>`;
-        } catch (error) {
-          if (document.getElementById(idCarregando)) {
-            document.getElementById(idCarregando).remove();
-          }
-          chatHistorico.innerHTML += `<div class="msg-bot erro"><strong>Erro:</strong> Ligar o servidor.</div>`;
-          console.error("Erro:", error);
+            return html;
         }
 
-        chatHistorico.scrollTop = chatHistorico.scrollHeight;
-      }
+        async function enviarMensagem() {
+            const input = document.getElementById("pergunta");
+            const chat = document.getElementById("chat-historico");
+            const msg = input.value.trim();
+            const imgPath = "img/logo.png";
+
+            if (!msg) return;
+
+            chat.innerHTML += `<div class="msg-usuario"><strong>Você:</strong> ${msg}</div>`;
+            input.value = "";
+            chat.scrollTop = chat.scrollHeight;
+
+            const idLoad = "loading-" + Date.now();
+            chat.innerHTML += `
+                    <div class="msg-container" id="${idLoad}">
+                        <img src="${imgPath}" class="bot-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                        <div class="msg-bot">
+                            <div class="typing-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                        </div>
+                    </div>`;
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+                const res = await fetch("http://127.0.0.1:5000/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mensagem: msg }),
+                });
+                const dados = await res.json();
+                document.getElementById(idLoad).remove();
+
+                const respostaFormatada = formatarResposta(dados.resposta);
+
+                chat.innerHTML += `
+                        <div class="msg-container">
+                            <img src="${imgPath}" class="bot-avatar" onerror="this.src='https://via.placeholder.com/40'">
+                            <div class="msg-bot"><strong>Bob:</strong><br>${respostaFormatada}</div>
+                        </div>`;
+            } catch (e) {
+                if (document.getElementById(idLoad)) document.getElementById(idLoad).remove();
+                chat.innerHTML += `<div class="msg-bot erro"><strong>Erro:</strong> Servidor offline.</div>`;
+            }
+            chat.scrollTop = chat.scrollHeight;
+        }
     </script>
-  </body>
+</body>
 </html>
