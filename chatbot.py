@@ -56,7 +56,7 @@ def get_response(user_input):
 
         print(f"Nota de similaridade TF-IDF: {maior_similaridade:.2f}")
 
-        if maior_similaridade > 0.35:
+        if maior_similaridade > 0.45:
             resposta = respostas_corpus[melhor_indice]
             return f"[Base de Dados Local - Suporte TI]\n\n{resposta}"
 
