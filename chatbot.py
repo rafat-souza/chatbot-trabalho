@@ -13,9 +13,9 @@ nltk.download('stopwords')
 
 gerador = pipeline(
     "text-generation",
-    model="microsoft/Phi-3-mini-4k-instruct",
-    device_map="auto",
-    torch_dtype=torch.float32
+    model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    device_map="cpu",
+    dtype=torch.float32
 )
 
 def remover_acentos(texto):
