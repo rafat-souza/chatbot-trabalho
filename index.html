@@ -18,6 +18,7 @@
     <div class="main-container">
         <div class="titulo">
             <h1>Bob o Bot</h1>
+            <div class="stats-container" id="tempo-medio">Tempo médio de resposta: -- s</div>
         </div>
 
         <div class="caixa-resposta" id="chat-historico">
@@ -36,13 +37,13 @@
     </div>
 
     <script>
+        let tempoTotal = 0;
+        let qtdRespostas = 0;
+
         function formatarResposta(texto) {
             if (!texto) return "";
-
             let html = texto.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-
             html = html.replace(/\n/g, "<br>");
-
             return html;
         }
 
@@ -68,6 +69,8 @@
                     </div>`;
             chat.scrollTop = chat.scrollHeight;
 
+            const tempoInicio = performance.now();
+
             try {
                 const res = await fetch("http://127.0.0.1:5000/api/chat", {
                     method: "POST",
@@ -75,6 +78,15 @@
                     body: JSON.stringify({ mensagem: msg }),
                 });
                 const dados = await res.json();
+
+                const tempoFim = performance.now();
+                const duracaoSegundos = (tempoFim - tempoInicio) / 1000;
+
+                tempoTotal += duracaoSegundos;
+                qtdRespostas++;
+                const mediaAtual = (tempoTotal / qtdRespostas).toFixed(2);
+                document.getElementById("tempo-medio").innerText = `Tempo médio de resposta: ${mediaAtual} s`;
+
                 document.getElementById(idLoad).remove();
 
                 const respostaFormatada = formatarResposta(dados.resposta);
