@@ -156,6 +156,10 @@ body, html {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.titulo h1 {
+    text-align: center;
+}
+
 .titulo-sobre h1 {
     font-size: 1.8rem;
     color: #00d4ff;

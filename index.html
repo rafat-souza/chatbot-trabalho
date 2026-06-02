@@ -18,14 +18,17 @@
     <div class="main-container">
         <div class="titulo">
             <h1>Bob o Bot</h1>
-            <div class="stats-container" id="tempo-medio">Tempo médio de resposta: -- s</div>
+            <div class="stats-container">
+                <div id="tempo-medio">Tempo médio de resposta: -- s</div>
+                <div id="taxa-base">Resoluções pela base: --%</div>
+            </div>
         </div>
 
         <div class="caixa-resposta" id="chat-historico">
             <div class="msg-container">
                 <img src="img/logo.png" class="bot-avatar" onerror="this.src='https://via.placeholder.com/40'">
                 <div class="msg-bot">
-                    <strong>Bob:</strong> Olá! Como posso ajudar com seu hardware hoje?
+                    <strong>Bob:</strong> Olá! Está com algum problema com tecnologia hoje?
                 </div>
             </div>
         </div>
@@ -39,6 +42,7 @@
     <script>
         let tempoTotal = 0;
         let qtdRespostas = 0;
+        let respostasBase = 0;
 
         function formatarResposta(texto) {
             if (!texto) return "";
@@ -84,8 +88,16 @@
 
                 tempoTotal += duracaoSegundos;
                 qtdRespostas++;
+
+                if (dados.resposta.includes("[Base de Dados Local")) {
+                    respostasBase++;
+                }
+
                 const mediaAtual = (tempoTotal / qtdRespostas).toFixed(2);
+                const taxaBase = ((respostasBase / qtdRespostas) * 100).toFixed(1);
+
                 document.getElementById("tempo-medio").innerText = `Tempo médio de resposta: ${mediaAtual} s`;
+                document.getElementById("taxa-base").innerText = `Resoluções pela base: ${taxaBase}%`;
 
                 document.getElementById(idLoad).remove();
 
