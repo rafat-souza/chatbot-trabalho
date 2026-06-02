@@ -1,3 +1,6 @@
+import requests
+import html
+import re
 import nltk
 import string
 import unicodedata
@@ -8,72 +11,100 @@ from transformers import pipeline
 
 gerador = pipeline(
     "text-generation",
-    model="Qwen/Qwen2.5-1.5B-Instruct",
+    model="microsoft/Phi-3-mini-4k-instruct",
     device_map="auto",
-    torch_dtype=torch.float16
+    torch_dtype=torch.float16,
 )
 
-base_dados = [
-    "Computador não liga: Verificar conexão do cabo de energia, chave da fonte de alimentação e conexões do painel frontal da placa-mãe.",
-    "Tela Azul da Morte (BSOD): Isolar falhas de memória RAM com o software Memtest86, verificar temperaturas e atualizar drivers críticos.",
-    "Lentidão do sistema: Monitorar o Gerenciador de Tarefas para identificar gargalos de CPU/Disco/RAM, desativar programas de inicialização desnecessários e verificar a integridade do SSD/HD.",
-    "Sem conexão com a internet: Reiniciar o modem/roteador, verificar o cabo de rede (RJ45), ou redefinir as configurações de rede (flush DNS).",
-    "Superaquecimento ou desligamento repentino: Limpar poeira dos dissipadores, substituir a pasta térmica do processador e garantir que os fans (ventoinhas) estejam operando adequadamente.",
-    "Sem saída de áudio: Checar o dispositivo de reprodução padrão no Windows, reinstalar os drivers de áudio da placa-mãe e testar conectores frontais e traseiros.",
-    "Monitor sem vídeo: Verificar cabo HDMI/DisplayPort, limpar contatos da memória RAM com borracha e testar a conexão diretamente na placa-mãe caso a placa de vídeo dedicada falhe."
-]
-
-
-def preprocess(text):
-    text = remover_acentos(text.lower())
-    tokens = nltk.word_tokenize(text)
-    stemmer = nltk.stem.RSLPStemmer()
-    return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation])
-
-
+# 2. Funções de Pré-processamento NLTK
 def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto)
                    if unicodedata.category(c) != 'Mn')
 
-base_dados_proc = [preprocess(doc) for doc in base_dados]
+def preprocess(text):
+    text = remover_acentos(str(text).lower())
+    tokens = nltk.word_tokenize(text)
+    stemmer = nltk.stem.RSLPStemmer()
+    return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation])
+
+def buscar_stack_exchange(query, site="pt.stackoverflow"):
+    url = "https://api.stackexchange.com/2.3/search/advanced"
+    params = {
+        "order": "desc",
+        "sort": "relevance",
+        "q": query,
+        "site": site,
+        "accepted": "True",
+        "filter": "withbody"
+    }
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        return response.json().get("items", [])
+    except Exception as e:
+        print(f"Erro ao acessar API: {e}")
+        return []
+
+
+def extrair_resposta_aceita(answer_id, site="pt.stackoverflow"):
+    url = f"https://api.stackexchange.com/2.3/answers/{answer_id}"
+    params = {"site": site, "filter": "withbody"}
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("items"):
+                corpo_html = html.unescape(data["items"][0]["body"])
+                texto_limpo = re.sub(r'<[^>]+>', '', corpo_html)
+                return texto_limpo.strip()
+    except Exception:
+        pass
+    return None
+
 
 def get_response(user_input):
-    user_input_processed = preprocess(user_input)
-    documentos = base_dados_proc + [user_input_processed]
+    itens_se = buscar_stack_exchange(user_input)
 
-    vectorizer = TfidfVectorizer()
-    tfidf = vectorizer.fit_transform(documentos)
+    if itens_se:
+        perguntas_se = [html.unescape(item["title"]) for item in itens_se]
 
-    vals = cosine_similarity(tfidf[-1], tfidf[:-1])
-    index = vals.argsort()[0][-1]
-    similaridade = vals.flatten()[index]
+        user_input_processed = preprocess(user_input)
+        perguntas_proc = [preprocess(q) for q in perguntas_se]
 
-    if similaridade > 0.1:
-        contexto = base_dados[index]
-    else:
-        contexto = "Não há informações específicas na base de dados. Forneça instruções gerais e peça mais detalhes do problema."
+        documentos = perguntas_proc + [user_input_processed]
+        vectorizer = TfidfVectorizer()
+        tfidf = vectorizer.fit_transform(documentos)
+
+        vals = cosine_similarity(tfidf[-1], tfidf[:-1])
+        melhor_indice = vals.argsort()[0][-1]
+        maior_similaridade = vals.flatten()[melhor_indice]
+
+        if maior_similaridade > 0.15:
+            resposta_aceita_id = itens_se[melhor_indice].get("accepted_answer_id")
+            if resposta_aceita_id:
+                texto_resposta = extrair_resposta_aceita(resposta_aceita_id)
+                if texto_resposta:
+                    return f"[Base de Conhecimento Stack Exchange - NLTK/TF-IDF]\n\n{texto_resposta}"
 
     mensagens = [
         {
             "role": "system",
-            "content": "Você é um assistente técnico de suporte. Seja direto nas respostas. Utilize a informação de contexto para embasar a solução. Não utilize tom de brincadeira."
+            "content": "Você é um assistente técnico de suporte de TI. A solicitação do usuário não foi encontrada na base de dados externa. Responda o problema relatado de forma técnica, direta e em português."
         },
         {
             "role": "user",
-            "content": f"Contexto recuperado da base: {contexto}\n\nProblema relatado pelo usuário: {user_input}"
+            "content": f"Problema relatado: {user_input}"
         }
     ]
 
     try:
         resultado = gerador(
             mensagens,
-            max_new_tokens=150,
+            max_new_tokens=512,
             temperature=0.2,
             do_sample=True
         )
-
-        resposta_final = resultado[0]["generated_text"][-1]["content"]
-        return resposta_final.strip()
+        return resultado[0]["generated_text"][-1]["content"].strip()
 
     except Exception as e:
         return f"Erro interno do modelo: {str(e)}"
