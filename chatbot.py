@@ -7,6 +7,10 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import pipeline
 
+nltk.download('punkt')
+nltk.download('rslp')
+nltk.download('stopwords')
+
 gerador = pipeline(
     "text-generation",
     model="microsoft/Phi-3-mini-4k-instruct",
@@ -22,7 +26,9 @@ def preprocess(text):
     text = remover_acentos(str(text).lower())
     tokens = nltk.word_tokenize(text)
     stemmer = nltk.stem.RSLPStemmer()
-    return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation])
+    stopwords_pt = nltk.corpus.stopwords.words('portuguese')
+
+    return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation and t not in stopwords_pt])
 
 try:
     df_base = pd.read_csv("suporte_ti.csv", encoding="utf-8")
