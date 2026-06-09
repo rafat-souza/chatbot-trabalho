@@ -7,9 +7,9 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from transformers import pipeline
 
-nltk.download('punkt')
-nltk.download('rslp')
-nltk.download('stopwords')
+nltk.download('punkt', quiet=True)
+nltk.download('rslp', quiet=True)
+nltk.download('stopwords', quiet=True)
 
 gerador = pipeline(
     "text-generation",
@@ -27,28 +27,27 @@ def preprocess(text):
     tokens = nltk.word_tokenize(text)
     stemmer = nltk.stem.RSLPStemmer()
     stopwords_pt = nltk.corpus.stopwords.words('portuguese')
-
     return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation and t not in stopwords_pt])
 
 try:
-    df_base = pd.read_csv("suporte_ti.csv", encoding="utf-8")
-    perguntas_originais = df_base['pergunta'].astype(str).tolist()
-    respostas_corpus = df_base['resposta'].astype(str).tolist()
+    df_base = pd.read_csv("base_conhecimento_ti.csv", encoding="utf-8")
+    topicos_corpus = df_base['topico'].astype(str).tolist()
+    conteudos_corpus = df_base['conteudo'].astype(str).tolist()
 
-    perguntas_proc = [preprocess(doc) for doc in perguntas_originais]
-
+    conteudos_proc = [preprocess(doc) for doc in conteudos_corpus]
     vectorizer = TfidfVectorizer()
-    tfidf_matrix = vectorizer.fit_transform(perguntas_proc)
+    tfidf_matrix = vectorizer.fit_transform(conteudos_proc)
 except Exception as e:
-    print(f"Erro ao carregar suporte_ti.csv: {e}")
-    perguntas_originais, respostas_corpus, perguntas_proc = [], [], []
+    print(f"Erro ao carregar base_conhecimento_ti.csv: {e}")
+    topicos_corpus, conteudos_corpus, conteudos_proc = [], [], []
     vectorizer, tfidf_matrix = None, None
 
-
 def get_response(user_input):
-    if vectorizer is not None and len(perguntas_proc) > 0:
-        user_input_processed = preprocess(user_input)
+    contexto_recuperado = ""
+    prefixo_frontend = ""
 
+    if vectorizer is not None and len(conteudos_proc) > 0:
+        user_input_processed = preprocess(user_input)
         user_tfidf = vectorizer.transform([user_input_processed])
         vals = cosine_similarity(user_tfidf, tfidf_matrix)
         melhor_indice = vals.argsort()[0][-1]
@@ -56,19 +55,22 @@ def get_response(user_input):
 
         print(f"Nota de similaridade TF-IDF: {maior_similaridade:.2f}")
 
-        if maior_similaridade > 0.45:
-            resposta = respostas_corpus[melhor_indice]
-            return f"[Base de Dados Local - Suporte TI]\n\n{resposta}"
+        if maior_similaridade > 0.15:
+            contexto_recuperado = conteudos_corpus[melhor_indice]
+            print(f"-> Base local acionada. Tópico: {topicos_corpus[melhor_indice]}")
+            prefixo_frontend = "[Base de Dados Local - RAG]\n\n"
+        else:
+            print("-> Contexto não encontrado. Utilizando conhecimento do LLM (Fallback).")
+            prefixo_frontend = "[Conhecimento do LLM - Fallback]\n\n"
+
+    if contexto_recuperado:
+        prompt_system = f"Sua tarefa é explicar a solução para o problema relatado utilizando APENAS este texto:\n\n{contexto_recuperado}"
+    else:
+        prompt_system = "Você é um técnico de TI. Dê uma solução técnica e direta para o problema relatado."
 
     mensagens = [
-        {
-            "role": "system",
-            "content": "Você é um assistente técnico de suporte de TI. A solicitação do usuário não foi encontrada na base de dados interna. Responda o problema relatado de forma técnica, direta e em português."
-        },
-        {
-            "role": "user",
-            "content": f"Problema relatado: {user_input}"
-        }
+        {"role": "system", "content": prompt_system},
+        {"role": "user", "content": f"Problema relatado: {user_input}"}
     ]
 
     try:
@@ -77,7 +79,8 @@ def get_response(user_input):
             max_new_tokens=512,
             temperature=0.2,
             do_sample=True,
-            return_full_text = False
+            repetition_penalty=1.15,
+            return_full_text=False
         )
 
         if isinstance(resultado[0]["generated_text"], list):
@@ -85,7 +88,7 @@ def get_response(user_input):
         else:
             resposta_final = resultado[0]["generated_text"]
 
-        return resposta_final.strip()
+        return prefixo_frontend + resposta_final.strip()
 
     except Exception as e:
         return f"Erro interno do modelo: {str(e)}"
