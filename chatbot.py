@@ -11,9 +11,15 @@ nltk.download('punkt', quiet=True)
 nltk.download('rslp', quiet=True)
 nltk.download('stopwords', quiet=True)
 
+classificador_intencao = pipeline(
+    "zero-shot-classification",
+    model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+    device_map="cpu"
+)
+
 gerador = pipeline(
     "text-generation",
-    model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+    model="Qwen/Qwen2.5-1.5B-Instruct",
     device_map="cpu",
     dtype=torch.float32
 )
@@ -22,12 +28,14 @@ def remover_acentos(texto):
     return ''.join(c for c in unicodedata.normalize('NFD', texto)
                    if unicodedata.category(c) != 'Mn')
 
+
 def preprocess(text):
     text = remover_acentos(str(text).lower())
     tokens = nltk.word_tokenize(text)
     stemmer = nltk.stem.RSLPStemmer()
     stopwords_pt = nltk.corpus.stopwords.words('portuguese')
     return " ".join([stemmer.stem(t) for t in tokens if t not in string.punctuation and t not in stopwords_pt])
+
 
 try:
     df_base = pd.read_csv("base_conhecimento_ti.csv", encoding="utf-8")
@@ -43,6 +51,17 @@ except Exception as e:
     vectorizer, tfidf_matrix = None, None
 
 def get_response(user_input):
+    labels_permitidos = ["suporte técnico de ti", "problema de computador ou rede", "outros assuntos"]
+    resultado_zero_shot = classificador_intencao(user_input, candidate_labels=labels_permitidos)
+
+    melhor_label = resultado_zero_shot["labels"][0]
+    score = resultado_zero_shot["scores"][0]
+
+    print(f"Intenção detectada: {melhor_label} (Score: {score:.2f})")
+
+    if melhor_label == "outros assuntos" or score < 0.40:
+        return "Sou um assistente exclusivo de TI e não respondo sobre outros assuntos."
+
     contexto_recuperado = ""
     prefixo_frontend = ""
 
@@ -55,7 +74,7 @@ def get_response(user_input):
 
         print(f"Nota de similaridade TF-IDF: {maior_similaridade:.2f}")
 
-        if maior_similaridade > 0.15:
+        if maior_similaridade > 0.30:
             contexto_recuperado = conteudos_corpus[melhor_indice]
             print(f"-> Base local acionada. Tópico: {topicos_corpus[melhor_indice]}")
             prefixo_frontend = "[Base de Dados Local - RAG]\n\n"
@@ -64,7 +83,7 @@ def get_response(user_input):
             prefixo_frontend = "[Conhecimento do LLM - Fallback]\n\n"
 
     if contexto_recuperado:
-        prompt_system = f"Sua tarefa é explicar a solução para o problema relatado utilizando APENAS este texto:\n\n{contexto_recuperado}"
+        prompt_system = f"Você é um chatbot e seu nome é Bob. Não temos email, a única forma de comunicação com o usuário é o seu chat. Sua tarefa é explicar a solução para o problema relatado utilizando APENAS este texto:\n\n{contexto_recuperado}"
     else:
         prompt_system = "Você é um técnico de TI. Dê uma solução técnica e direta para o problema relatado."
 
