@@ -74,7 +74,7 @@ def get_response(user_input):
 
         print(f"Nota de similaridade TF-IDF: {maior_similaridade:.2f}")
 
-        if maior_similaridade > 0.30:
+        if maior_similaridade > 0.25:
             contexto_recuperado = conteudos_corpus[melhor_indice]
             print(f"-> Base local acionada. Tópico: {topicos_corpus[melhor_indice]}")
             prefixo_frontend = "[Base de Dados Local - RAG]\n\n"
